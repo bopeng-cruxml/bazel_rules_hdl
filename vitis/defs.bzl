@@ -10,18 +10,16 @@ HlsFileInfo = provider(
 def _vitis_hls_files_aspect_impl(target, ctx):
     """Filter out the vitis header deps."""
     files = []
+    for f in target[CcInfo].compilation_context.headers.to_list():
+        if "vitis/v" not in f.dirname:
+            files.append(f)
 
-    # Make sure the rule has a srcs attribute.
     if hasattr(ctx.rule.attr, "srcs"):
         for src in ctx.rule.attr.srcs:
             for f in src.files.to_list():
-                if "vitis/v" not in f.dirname:
+                if f not in files and "vitis/v" not in f.dirname:
                     files.append(f)
-    if hasattr(ctx.rule.attr, "hdrs"):
-        for src in ctx.rule.attr.hdrs:
-            for f in src.files.to_list():
-                if "vitis/v" not in f.dirname:
-                    files.append(f)
+    
     if hasattr(ctx.rule.attr, "deps"):
         for dep in ctx.rule.attr.deps:
             files = files + dep[HlsFileInfo].files
@@ -35,11 +33,17 @@ vitis_hls_files_aspect = aspect(
 
 def _vitis_generate_impl(ctx):
     all_files = []
+    cflags = "-D__SYNTHESIS__=1 --std=c++17"
+    for dep in ctx.attr.deps:
+        for file in dep[HlsFileInfo].files:
+            if file.root.path != "":
+                cflags += " -I" + file.root.path
+
     source_file_str = ""
     for dep in ctx.attr.deps:
         for file in dep[HlsFileInfo].files:
             all_files.append(file)
-            source_file_str += "add_file " + file.path + " -cflags \"-D__SYNTHESIS__=1\"\n"
+            source_file_str += "add_file " + file.path + " -cflags \"" + cflags + "\"\n"
 
     vitis_tcl = ctx.actions.declare_file("{}_run_hls.tcl".format(ctx.label.name))
     vitis_log = ctx.actions.declare_file("{}_hls.log".format(ctx.label.name))
