@@ -146,7 +146,8 @@ def create_and_synth(
     )
 
 def _create_project_impl(ctx):
-    return create_and_synth(ctx, 0)
+    default_info = create_and_synth(ctx, 0)
+    return [default_info[0]]
 
 create_project = rule(
     implementation = _create_project_impl,
@@ -514,7 +515,7 @@ def _write_bitstream_impl(ctx):
 
     outputs = [bitstream]
 
-    return run_tcl_template(
+    default_info = run_tcl_template(
         ctx,
         ctx.file._write_bitstream_template,
         substitutions,
@@ -522,6 +523,7 @@ def _write_bitstream_impl(ctx):
         [checkpoint_in],
         outputs,
     )
+    return [default_info[0]]
 
 write_bitstream = rule(
     implementation = _write_bitstream_impl,
