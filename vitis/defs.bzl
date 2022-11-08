@@ -36,10 +36,8 @@ def _vitis_generate_impl(ctx):
     cflags = "-D__SYNTHESIS__=1 --std=c++17"
     for dep in ctx.attr.deps:
         for file in dep[HlsFileInfo].files:
-            if "external" in file.dirname:
-                # A hacky way to include external workspace.
-                external_path = file.dirname.split("external")[0] + "external" + "/".join(file.dirname.split("external")[1].split("/")[:2])
-                cflags += " -I" + external_path
+            external_path = "/".join([file.root.path, file.owner.workspace_root]) if file.root.path else file.owner.workspace_root
+            cflags += " -I" + external_path
 
     source_file_str = ""
     for dep in ctx.attr.deps:
